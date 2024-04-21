@@ -182,6 +182,9 @@ def draw_bboxes(draw, objects, labels, obj_categories, ignore, width, label_size
 
                 left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
                 tw, th = right - left, bottom - top
+                # Add space below the baseline
+                _, descent = font.getmetrics()
+                th += descent
 
                 # TODO: Looks weird! We need image dims to make it right
                 tx0 = max(b[0], max(b[0], tx0)) if tx0 < 0 else tx0
