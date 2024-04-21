@@ -180,9 +180,8 @@ def draw_bboxes(draw, objects, labels, obj_categories, ignore, width, label_size
                     # TODO: Implement notification message as popup window
                     font = ImageFont.load_default()
 
-                tw, th = draw.textsize(text, font)
-                tx0 = b[0]
-                ty0 = b[1] - th
+                left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+                tw, th = right - left, bottom - top
 
                 # TODO: Looks weird! We need image dims to make it right
                 tx0 = max(b[0], max(b[0], tx0)) if tx0 < 0 else tx0
