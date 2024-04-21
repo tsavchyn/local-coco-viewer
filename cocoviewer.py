@@ -873,18 +873,31 @@ def print_info(message: str):
     logging.info(message)
 
 
+def exit_with_error(message: str, root=None):
+    root.geometry("300x150")  # app size when no data is provided
+    messagebox.showwarning("Warning!", message)
+    print_info("Exiting because of error: " + message)
+    root.destroy()
+    exit(1)
+
+
 def main():
     print_info("Starting...")
     args = parser.parse_args()
     root = tk.Tk()
     root.title("COCO Viewer")
 
-    if not args.images or not args.annotations:
-        root.geometry("300x150")  # app size when no data is provided
-        messagebox.showwarning("Warning!", "Nothing to show.\nPlease specify a path to the COCO dataset!")
-        print_info("Exiting...")
-        root.destroy()
-        return
+    if not args.annotations:
+        exit_with_error("No annotations file provided!", root)
+    elif not os.path.exists(args.annotations) or not os.path.isfile(args.annotations):
+        exit_with_error("Invalid annotations file path!", root)
+    elif not args.images:
+        try:
+            # Use image root from the annotations file if not provided via command line
+            args.images = json.loads(open(args.annotations).read())["image_root"]
+        except KeyError:
+            exit_with_error("No images folder provided neither via the annotations file "
+                            "nor as a command line argument!", root)
 
     data = Data(args.images, args.annotations)
     statusbar = StatusBar(root)
