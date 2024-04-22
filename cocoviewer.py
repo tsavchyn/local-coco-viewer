@@ -180,7 +180,9 @@ def draw_bboxes(draw, objects, labels, obj_categories, ignore, width, label_size
                     # TODO: Implement notification message as popup window
                     font = ImageFont.load_default()
 
-                tw, th = draw.textsize(text, font)
+                _, _, tw, th = draw.textbbox((0, 0), text, font=font)
+                _, descent = font.getmetrics()
+                th += descent
                 tx0 = b[0]
                 ty0 = b[1] - th
 
@@ -458,6 +460,11 @@ class Menu(tk.Menu):
         menu.colormenu.add_radiobutton(label="Objects", value=True)
 
         menu.add_cascade(label="Coloring", menu=menu.colormenu)
+
+        menu.add_separator()
+        menu.add_command(label="Zoom In", accelerator="Ctrl++")
+        menu.add_command(label="Zoom Out", accelerator="Ctrl+-")
+
         return menu
 
 
@@ -543,6 +550,8 @@ class Controller:
         self.menu.view.entryconfigure("BBoxes", variable=self.bboxes_on_global, command=self.menu_view_bboxes)
         self.menu.view.entryconfigure("Labels", variable=self.labels_on_global, command=self.menu_view_labels)
         self.menu.view.entryconfigure("Masks", variable=self.masks_on_global, command=self.menu_view_masks)
+        self.menu.view.entryconfigure("Zoom In", command=self.zoom_in)
+        self.menu.view.entryconfigure("Zoom Out", command=self.zoom_out)
         self.menu.view.colormenu.entryconfigure(
             "Categories",
             variable=self.coloring_on_global,
@@ -582,10 +591,13 @@ class Controller:
         self.bind_events()
 
         # Compose the very first image
+        self.zoom_factor = 1.0
         self.current_composed_image = None
         self.current_img_obj_categories = None
         self.current_img_categories = None
         self.update_img()
+
+    ZOOM_STEP = 1.1
 
     def set_locals(self):
         self.bboxes_on_local = self.bboxes_on_global.get()
@@ -662,9 +674,13 @@ class Controller:
             label_size=label_size,
         )
 
-        # Prepare PIL image for Tkinter
+        # Scale PIL image according to zoom_factor and prepare for Tkinter
         img = self.current_composed_image
         w, h = img.size
+        if self.zoom_factor != 1.0:
+            w = int(w * self.zoom_factor)
+            h = int(h * self.zoom_factor)
+            img = img.resize((w, h), Image.LANCZOS)
         img = ImageTk.PhotoImage(img)
 
         # Set image as current
@@ -839,6 +855,14 @@ class Controller:
     def masks_slider_status_update(self):
         self.sliders.mask_slider.configure(state=tk.NORMAL if self.masks_on_local else tk.DISABLED)
 
+    def zoom_in(self, event=None):
+        self.zoom_factor *= self.ZOOM_STEP
+        self.update_img(local=False)
+
+    def zoom_out(self, event=None):
+        self.zoom_factor /= self.ZOOM_STEP
+        self.update_img(local=False)
+
     def bind_events(self):
         """Binds events."""
         # Navigation
@@ -866,9 +890,21 @@ class Controller:
         self.objects_panel.object_box.bind("<<ListboxSelect>>", self.select_object)
         self.image_panel.bind("<Button-1>", lambda e: self.image_panel.focus_set())
 
+        # Zoom
+        self.root.bind("<Control-plus>", self.zoom_in)
+        self.root.bind("<Control-minus>", self.zoom_out)
+
 
 def print_info(message: str):
     logging.info(message)
+
+
+def exit_with_error(message: str, root=None):
+    root.geometry("300x150")  # app size when no data is provided
+    messagebox.showwarning("Warning!", message)
+    print_info("Exiting because of error: " + message)
+    root.destroy()
+    exit(1)
 
 
 def main():
@@ -877,12 +913,17 @@ def main():
     root = tk.Tk()
     root.title("COCO Viewer")
 
-    if not args.images or not args.annotations:
-        root.geometry("300x150")  # app size when no data is provided
-        messagebox.showwarning("Warning!", "Nothing to show.\nPlease specify a path to the COCO dataset!")
-        print_info("Exiting...")
-        root.destroy()
-        return
+    if not args.annotations:
+        exit_with_error("No annotations file provided!", root)
+    elif not os.path.exists(args.annotations) or not os.path.isfile(args.annotations):
+        exit_with_error("Invalid annotations file path!", root)
+    elif not args.images:
+        try:
+            # Use image root from the annotations file if not provided via command line
+            args.images = json.loads(open(args.annotations).read())["image_root"]
+        except KeyError:
+            exit_with_error("No images folder provided neither via the annotations file "
+                            "nor as a command line argument!", root)
 
     data = Data(args.images, args.annotations)
     statusbar = StatusBar(root)
