@@ -15,6 +15,8 @@ Simple COCO Objects Viewer in Tkinter. Allows quick viewing on local machine.
 | <kbd>M</kbd>, <kbd>Ctrl</kbd> + <kbd>M</kbd> | Toggle **M**asks |
 | <kbd>Ctrl</kbd> + <kbd>S</kbd> | Save Current Image |
 | <kbd>Ctrl</kbd> + <kbd>Q</kbd>, <kbd>Ctrl</kbd> + <kbd>W</kbd> | Exit Viewer |
+| <kbd>Ctrl</kbd> + <kbd>+</kbd> | Zoom In |
+| <kbd>Ctrl</kbd> + <kbd>-</kbd> | Zoom Out |
 
 ## Requirements
 `python3` `PIL`

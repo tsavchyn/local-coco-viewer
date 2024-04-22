@@ -460,6 +460,11 @@ class Menu(tk.Menu):
         menu.colormenu.add_radiobutton(label="Objects", value=True)
 
         menu.add_cascade(label="Coloring", menu=menu.colormenu)
+
+        menu.add_separator()
+        menu.add_command(label="Zoom In", accelerator="Ctrl++")
+        menu.add_command(label="Zoom Out", accelerator="Ctrl+-")
+
         return menu
 
 
@@ -584,10 +589,13 @@ class Controller:
         self.bind_events()
 
         # Compose the very first image
+        self.zoom_factor = 1.0
         self.current_composed_image = None
         self.current_img_obj_categories = None
         self.current_img_categories = None
         self.update_img()
+
+    ZOOM_STEP = 1.1
 
     def set_locals(self):
         self.bboxes_on_local = self.bboxes_on_global.get()
@@ -664,9 +672,13 @@ class Controller:
             label_size=label_size,
         )
 
-        # Prepare PIL image for Tkinter
+        # Scale PIL image according to zoom_factor and prepare for Tkinter
         img = self.current_composed_image
         w, h = img.size
+        if self.zoom_factor != 1.0:
+            w = int(w * self.zoom_factor)
+            h = int(h * self.zoom_factor)
+            img = img.resize((w, h), Image.LANCZOS)
         img = ImageTk.PhotoImage(img)
 
         # Set image as current
@@ -841,6 +853,14 @@ class Controller:
     def masks_slider_status_update(self):
         self.sliders.mask_slider.configure(state=tk.NORMAL if self.masks_on_local else tk.DISABLED)
 
+    def zoom_in(self, event):
+        self.zoom_factor *= self.ZOOM_STEP
+        self.update_img(local=False)
+
+    def zoom_out(self, event):
+        self.zoom_factor /= self.ZOOM_STEP
+        self.update_img(local=False)
+
     def bind_events(self):
         """Binds events."""
         # Navigation
@@ -867,6 +887,10 @@ class Controller:
         self.objects_panel.category_box.bind("<<ListboxSelect>>", self.select_category)
         self.objects_panel.object_box.bind("<<ListboxSelect>>", self.select_object)
         self.image_panel.bind("<Button-1>", lambda e: self.image_panel.focus_set())
+
+        # Zoom
+        self.root.bind("<Control-plus>", self.zoom_in)
+        self.root.bind("<Control-minus>", self.zoom_out)
 
 
 def print_info(message: str):
