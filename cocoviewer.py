@@ -550,6 +550,8 @@ class Controller:
         self.menu.view.entryconfigure("BBoxes", variable=self.bboxes_on_global, command=self.menu_view_bboxes)
         self.menu.view.entryconfigure("Labels", variable=self.labels_on_global, command=self.menu_view_labels)
         self.menu.view.entryconfigure("Masks", variable=self.masks_on_global, command=self.menu_view_masks)
+        self.menu.view.entryconfigure("Zoom In", command=self.zoom_in)
+        self.menu.view.entryconfigure("Zoom Out", command=self.zoom_out)
         self.menu.view.colormenu.entryconfigure(
             "Categories",
             variable=self.coloring_on_global,
@@ -853,11 +855,11 @@ class Controller:
     def masks_slider_status_update(self):
         self.sliders.mask_slider.configure(state=tk.NORMAL if self.masks_on_local else tk.DISABLED)
 
-    def zoom_in(self, event):
+    def zoom_in(self, event=None):
         self.zoom_factor *= self.ZOOM_STEP
         self.update_img(local=False)
 
-    def zoom_out(self, event):
+    def zoom_out(self, event=None):
         self.zoom_factor /= self.ZOOM_STEP
         self.update_img(local=False)
 
