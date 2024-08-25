@@ -874,6 +874,22 @@ def print_info(message: str):
 def main():
     print_info("Starting...")
     args = parser.parse_args()
+
+    if not args.images:
+        messagebox.showwarning("Warning!", "Nothing to show.\nPlease specify a path to the Images!")
+        # Show the open file dialog by specifying path 
+        args.images = filedialog.askdirectory() 
+        
+    if not args.annotations:
+        messagebox.showwarning("Warning!", "Nothing to show.\nPlease specify a path to the Annotations!")
+        # Specify the file types 
+        filetypes = (('JSON files', '*.json'), ("All files", "*.*")) 
+        # Show the open file dialog by specifying path 
+        args.annotations = filedialog.askopenfilename(filetypes=filetypes) 
+    
+    print_info(f"Image Path: {args.images}")
+    print_info(f"Annotations Path: {args.annotations}")
+
     root = tk.Tk()
     root.title("COCO Viewer")
 
